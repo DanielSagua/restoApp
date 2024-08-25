@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Order</title>
+    <!-- Bootstrap CSS from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .rounded-border {
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-outline-primary.active {
+            color: #007bff;
+            border-color: #007bff;
+        }
+
+        .quantity-controls button {
+            font-size: 1.5rem;
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .quantity-controls input {
+            font-size: 1.5rem;
+            text-align: center;
+            width: 6rem;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .btn-secondary {
+            margin-right: 10px;
+        }
+
+        .remove-btn {
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #dc3545;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <!-- Left Side: Product Selection -->
+            <div class="col-md-6">
+                <!-- Top 70%: Categories and Products -->
+                <div class="row" style="height: 70%;">
+                    <!-- Categories (Left) -->
+                    <div class="col-md-6 rounded-border" style="height: 100%;">
+                        <h4>Categories</h4>
+                        <div id="categories" class="list-group">
+                            <button type="button" class="btn btn-outline-secondary mb-2" id="btn-liquidos" onclick="showSubcategories('liquidos')">Líquidos</button>
+                            <button type="button" class="btn btn-outline-secondary mb-2" id="btn-platos" onclick="showSubcategories('platos')">Platos</button>
+                            <button type="button" class="btn btn-outline-secondary mb-2" id="btn-ensaladas" onclick="showSubcategories('ensaladas')">Ensaladas</button>
+                            <button type="button" class="btn btn-outline-secondary mb-2" id="btn-postres" onclick="showSubcategories('postres')">Postres</button>
+                            <button type="button" class="btn btn-outline-secondary mb-2" id="btn-especiales" onclick="showSubcategories('especiales')">Especiales</button>
+                        </div>
+                        <div id="subcategories" class="d-none">
+                            <h4>Subcategories</h4>
+                            <div id="subcategories-buttons" class="list-group"></div>
+                        </div>
+
+                    </div>
+                    <!-- Products (Right) -->
+                    <div class="col-md-6 rounded-border" style="height: 100%;">
+                        <h4>Products</h4>
+                        <div id="products" class="mt-2 d-none"></div>
+                    </div>
+                </div>
+
+                <!-- Bottom 30%: Quantity and Buttons -->
+                <div class="row mt-3" style="height: 30%;">
+                    <div class="col-6 rounded-border">
+                        <h4>Quantity</h4>
+                        <div class="quantity-controls d-flex align-items-center">
+                            <button type="button" class="btn btn-outline-secondary" onclick="changeQuantity(-1)">-</button>
+                            <input type="number" class="form-control mx-2" id="quantity" value="1" min="1">
+                            <button type="button" class="btn btn-outline-secondary" onclick="changeQuantity(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="col-6 d-flex align-items-end rounded-border">
+                        <button type="button" class="btn btn-success btn-block me-2" onclick="addToOrder()">Add to Order</button>
+                        <button type="button" class="btn btn-secondary btn-block" onclick="goBack()">Back to Categories</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Selected Products -->
+            <div class="col-md-6 rounded-border">
+                <h3>Selected Products</h3>
+                <ul class="list-group mb-3" id="selectedProducts"></ul>
+                <form action="/order" method="POST">
+                    <input type="hidden" id="items" name="items">
+                    <button type="submit" class="btn btn-primary">Place Order</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script src="/js/scripts.js"></script>
+    <script>
+        let selectedProducts = [];
+        let currentProduct = '';
+        let currentCategoryBtn = null;
+        let currentProductBtn = null;
+
+        const subcategories = {
+            liquidos: ['Jugos', 'Gaseosas', 'Bebidas Alcohólicas', 'Otros'],
+            platos: ['Fríos', 'Calientes'],
+            ensaladas: ['Ensalada 1', 'Ensalada 2', 'Ensalada 3'],
+            postres: ['Postre 1', 'Postre 2', 'Postre 3'],
+            especiales: ['Especial 1', 'Especial 2', 'Especial 3']
+        };
+
+
+
+        const products = {
+            Jugos: ['Jugo de Naranja', 'Jugo de Manzana', 'Jugo de Piña'],
+            Gaseosas: ['Coca-Cola', 'Pepsi', 'Sprite'],
+            'Bebidas Alcohólicas': ['Cerveza', 'Vino', 'Licor'],
+            Otros: ['Agua Mineral', 'Té Helado', 'Limonada'],
+            Fríos: ['Ensalada César', 'Ensalada Griega', 'Ensalada de Atún'],
+            Calientes: ['Sopa de Pollo', 'Pasta Bolognesa', 'Ratatouille'],
+            'Ensalada 1': ['Ensalada de Tomate', 'Ensalada de Zanahoria', 'Ensalada de Remolacha'],
+            'Ensalada 2': ['Ensalada de Pollo', 'Ensalada de Atún', 'Ensalada de Quinoa'],
+            'Ensalada 3': ['Ensalada Mediterránea', 'Ensalada de Espinacas', 'Ensalada de Frutas'],
+            'Postre 1': ['Tarta de Manzana', 'Brownie', 'Cheesecake'],
+            'Postre 2': ['Tiramisú', 'Panna Cotta', 'Creme Brulee'],
+            'Postre 3': ['Helado', 'Flan', 'Mousse de Chocolate'],
+            'Especial 1': ['Especial del Chef 1', 'Especial del Chef 2', 'Especial del Chef 3'],
+            'Especial 2': ['Especial del Día 1', 'Especial del Día 2', 'Especial del Día 3'],
+            'Especial 3': ['Especial de Temporada 1', 'Especial de Temporada 2', 'Especial de Temporada 3']
+        };
+
+        function showSubcategories(category) {
+    const categoriesDiv = document.getElementById('categories');
+    const subcategoriesDiv = document.getElementById('subcategories');
+    const subcategoriesButtonsDiv = document.getElementById('subcategories-buttons');
+
+    if (!subcategoriesButtonsDiv) {
+        console.error('Element with ID subcategories-buttons not found.');
+        return;
+    }
+
+    categoriesDiv.classList.add('d-none');
+    subcategoriesDiv.classList.remove('d-none');
+    subcategoriesButtonsDiv.innerHTML = '';
+
+    if (currentCategoryBtn) {
+        currentCategoryBtn.classList.remove('active');
+    }
+
+    currentCategoryBtn = document.getElementById(`btn-${category}`);
+    currentCategoryBtn.classList.add('active');
+
+    subcategories[category].forEach(subcategory => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-outline-secondary mb-2';
+        button.textContent = subcategory;
+        button.onclick = () => showProducts(subcategory);
+        subcategoriesButtonsDiv.appendChild(button);
+    });
+
+    currentProduct = '';
+    if (currentProductBtn) {
+        currentProductBtn.classList.remove('btn-primary');
+        currentProductBtn.classList.add('btn-outline-secondary');
+        currentProductBtn = null;
+    }
+}
+
+
+        // function showSubcategories(category) {
+        //     document.getElementById('categories').classList.add('d-none');
+        //     const subcategoriesDiv = document.getElementById('subcategories');
+        //     subcategoriesDiv.classList.remove('d-none');
+        //     document.getElementById('subcategories-buttons').innerHTML = '';
+
+        //     if (currentCategoryBtn) {
+        //         currentCategoryBtn.classList.remove('active');
+        //     }
+
+        //     currentCategoryBtn = document.getElementById(`btn-${category}`);
+        //     currentCategoryBtn.classList.add('active');
+
+        //     subcategories[category].forEach(subcategory => {
+        //         const button = document.createElement('button');
+        //         button.type = 'button';
+        //         button.className = 'btn btn-outline-secondary mb-2';
+        //         button.textContent = subcategory;
+        //         button.onclick = () => showProducts(subcategory);
+        //         document.getElementById('subcategories-buttons').appendChild(button);
+        //     });
+
+        //     currentProduct = '';
+        //     if (currentProductBtn) {
+        //         currentProductBtn.classList.remove('btn-primary');
+        //         currentProductBtn.classList.add('btn-outline-secondary');
+        //         currentProductBtn = null;
+        //     }
+        // }
+
+
+
+        
+        function showProducts(subcategory) {
+            const productsDiv = document.getElementById('subcategories');
+            productsDiv.classList.remove('d-none');
+            productsDiv.innerHTML = '';
+            
+            products[subcategory].forEach(product => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn btn-outline-secondary mb-2 w-100';
+                button.textContent = product;
+                button.onclick = () => selectProduct(product, button);
+                productsDiv.appendChild(button);
+            });
+
+            //document.getElementById('subcategories').classList.add('d-none');
+        }
+
+
+        function selectProduct(product, btn) {
+            if (currentProductBtn && currentProductBtn !== btn) {
+                currentProductBtn.classList.remove('btn-primary');
+                currentProductBtn.classList.add('btn-outline-secondary');
+            }
+
+            currentProduct = product;
+            currentProductBtn = btn;
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-primary');
+        }
+
+        function changeQuantity(amount) {
+            const quantityInput = document.getElementById('quantity');
+            let currentQuantity = parseInt(quantityInput.value, 10);
+            currentQuantity = Math.max(currentQuantity + amount, 1); // Ensure minimum quantity is 1
+            quantityInput.value = currentQuantity;
+        }
+
+        function addToOrder() {
+            const quantity = document.getElementById('quantity').value;
+            if (currentProduct && quantity > 0) {
+                selectedProducts.push(`${currentProduct} x${quantity}`);
+                displaySelectedProducts();
+                document.getElementById('items').value = selectedProducts.join(', ');
+
+                // Reset selection and return to categories
+                currentProduct = '';
+                if (currentProductBtn) {
+                    currentProductBtn.classList.remove('btn-primary');
+                    currentProductBtn.classList.add('btn-outline-secondary');
+                    currentProductBtn = null;
+                }
+
+                // Reset subcategories and products view
+                document.getElementById('products').classList.add('d-none');
+                document.getElementById('subcategories').classList.add('d-none');
+                document.getElementById('categories').classList.remove('d-none');
+            } else {
+                alert('Please select a product and quantity.');
+            }
+        }
+
+        function goBack() {
+            // Reset subcategories and products view, and show categories
+            document.getElementById('products').classList.add('d-none');
+            document.getElementById('subcategories').classList.add('d-none');
+            document.getElementById('categories').classList.remove('d-none');
+        }
+
+        function displaySelectedProducts() {
+            const productList = document.getElementById('selectedProducts');
+            productList.innerHTML = '';
+            selectedProducts.forEach((product, index) => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.textContent = product;
+
+                const removeBtn = document.createElement('span');
+                removeBtn.className = 'remove-btn';
+                removeBtn.textContent = '❌';
+                removeBtn.onclick = () => removeFromOrder(index);
+
+                li.appendChild(removeBtn);
+                productList.appendChild(li);
+            });
+        }
+
+        function removeFromOrder(index) {
+            selectedProducts.splice(index, 1);
+            displaySelectedProducts();
+            document.getElementById('items').value = selectedProducts.join(', ');
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Order</title>
+    <!-- Bootstrap CSS from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+
+    <div class="container mt-5">
+        <div class="row">
+            <!-- Left Side: Product Selection -->
+            <div class="col-md-6">
+                <!-- Top 70%: Categories and Products -->
+                <div class="row" style="height: 70%;">
+                    <!-- Categories (Left) -->
+                    <div class="col-md-6 rounded-border" style="height: 100%;">
+
+                        <div id="categories" class="list-group">
+                            <h4>Categories</h4>
+                            <button type="button" class="btn btn-outline-secondary mb-2" id="btn-liquidos"
+                                onclick="showSubcategories('liquidos'), document.getElementById('categories').classList.add('d-none');">Líquidos</button>
+                            <button type="button" class="btn btn-outline-secondary mb-2" id="btn-platos"
+                                onclick="showSubcategories('platos'), document.getElementById('categories').classList.add('d-none');">Platos</button>
+                            <button type="button" class="btn btn-outline-secondary mb-2" id="btn-ensaladas"
+                                onclick="showSubcategories('ensaladas'), document.getElementById('categories').classList.add('d-none');">Ensaladas</button>
+                            <button type="button" class="btn btn-outline-secondary mb-2" id="btn-postres"
+                                onclick="showSubcategories('postres'), document.getElementById('categories').classList.add('d-none');">Postres</button>
+                            <button type="button" class="btn btn-outline-secondary mb-2" id="btn-especiales"
+                                onclick="showSubcategories('especiales'), document.getElementById('categories').classList.add('d-none');">Especiales</button>
+                        </div>
+                        <div id="subcategories" class="d-none">
+                            <h4>Subcategories</h4>
+                            <div id="subcategories-buttons" class="list-group"></div>
+                        </div>
+                    </div>
+                    <!-- Products (Right) -->
+                    <div class="col-md-6 rounded-border" style="height: 100%;">
+                        <h4>Products</h4>
+                        <div id="products" class="mt-2 d-none"></div>
+                    </div>
+                </div>
+
+                <!-- Bottom 30%: Quantity and Buttons -->
+                <div class="row mt-3" style="height: 30%;">
+                    <div class="col-6 rounded-border">
+                        <h4>Quantity</h4>
+                        <div class="quantity-controls d-flex align-items-center">
+                            <button type="button" class="btn btn-outline-secondary"
+                                onclick="changeQuantity(-1)">-</button>
+                            <input type="number" class="form-control mx-2" id="quantity" value="1" min="1">
+                            <button type="button" class="btn btn-outline-secondary"
+                                onclick="changeQuantity(1)">+</button>
+                        </div>
+                        <div>
+                            <input type="text" name="a" id="a" placeholder="succionalo">
+
+                        </div>
+                    </div>
+                    <div class="col-6 d-flex align-items-end rounded-border">
+                        <button type="button" class="btn btn-success btn-block me-2" onclick="addToOrder()">Add to
+                            Order</button>
+                        <button type="button" class="btn btn-secondary btn-block" onclick="goBack()">Back to
+                            Categories</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Selected Products -->
+            <div class="col-md-6 rounded-border">
+                <h3>Selected Products</h3>
+                <ul class="list-group mb-3" id="selectedProducts"></ul>
+                <form action="/order" method="POST">
+                    <input type="hidden" id="items" name="items">
+                    <button type="submit" class="btn btn-primary">Place Order</button>
+                </form>
+            </div>
+        </div>
+        <!-- Sección para subcategorías adicionales -->
+        <div id="subcategories2" class="d-none mt-3">
+            <h4>Subcategories 2</h4>
+            <div id="subcategories2-buttons" class="list-group"></div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script src="/js/scripts.js"></script>
+    <script>
+        let selectedProducts = [];
+        let currentProduct = '';
+        let currentCategoryBtn = null;
+        let currentProductBtn = null;
+        let currentSubcategoryBtn = null;
+
+        const subcategories = {
+            liquidos: ['Jugos', 'Gaseosas', 'Bebidas Alcohólicas', 'Otros'],
+            platos: ['Fríos', 'Calientes'],
+            ensaladas: ['Ensalada 1', 'Ensalada 2', 'Ensalada 3'],
+            postres: ['Postre 1', 'Postre 2', 'Postre 3'],
+            especiales: ['Especial 1', 'Especial 2', 'Especial 3']
+        };
+
+        const subcategories2 = {
+            Fríos: ['Ensalada César', 'Ensalada Griega', 'Ensalada de Atún'],
+            Calientes: ['Pollo', 'Vacuno', 'Cerdo'],
+
+        };
+
+        const products = {
+            Jugos: ['Jugo de Naranja', 'Jugo de Manzana', 'Jugo de Piña'],
+            Gaseosas: ['Coca-Cola', 'Pepsi', 'Sprite'],
+            'Bebidas Alcohólicas': ['Cerveza', 'Vino', 'Licor'],
+            Otros: ['Agua Mineral', 'Té Helado', 'Limonada'],
+            Pollo: ['Pollo Arroz', 'Pollo Papas'],
+            Vacuno: ['Arroz', 'Papas'],
+            Cerdo: ['Arroz', 'Papas'],
+            // Fríos: ['Ensalada César', 'Ensalada Griega', 'Ensalada de Atún'],
+            // Calientes: ['Sopa de Pollo', 'Pasta Bolognesa', 'Ratatouille'],
+            'Ensalada 1': ['Ensalada de Tomate', 'Ensalada de Zanahoria', 'Ensalada de Remolacha'],
+            'Ensalada 2': ['Ensalada de Pollo', 'Ensalada de Atún', 'Ensalada de Quinoa'],
+            'Ensalada 3': ['Ensalada Mediterránea', 'Ensalada de Espinacas', 'Ensalada de Frutas'],
+            'Postre 1': ['Tarta de Manzana', 'Brownie', 'Cheesecake'],
+            'Postre 2': ['Tiramisú', 'Panna Cotta', 'Creme Brulee'],
+            'Postre 3': ['Helado', 'Flan', 'Mousse de Chocolate'],
+            'Especial 1': ['Especial del Chef 1', 'Especial del Chef 2', 'Especial del Chef 3'],
+            'Especial 2': ['Especial del Día 1', 'Especial del Día 2', 'Especial del Día 3'],
+            'Especial 3': ['Especial Sorpresa 1', 'Especial Sorpresa 2', 'Especial Sorpresa 3']
+        };
+
+        function showSubcategories(category) {
+    if (currentCategoryBtn) {
+        currentCategoryBtn.classList.remove('active');
+    }
+
+    const subcategoriesDiv = document.getElementById('subcategories');
+    const subcategoriesButtonsDiv = document.getElementById('subcategories-buttons');
+
+    if (category in subcategories) {
+        currentCategoryBtn = document.getElementById('btn-' + category);
+        currentCategoryBtn.classList.add('active');
+        subcategoriesButtonsDiv.innerHTML = '';
+
+        subcategories[category].forEach((subcategory) => {
+            const btn = document.createElement('button');
+            btn.classList.add('btn', 'btn-outline-primary', 'mb-2');
+            btn.textContent = subcategory;
+            
+            // Aquí se verifica si hay subcategorías adicionales
+            btn.onclick = () => {
+                if (subcategory in subcategories2) {
+                    showSubcategories2(subcategory);
+                } else {
+                    showProducts(subcategory);
+                }
+            };
+            
+            subcategoriesButtonsDiv.appendChild(btn);
+        });
+
+        subcategoriesDiv.classList.remove('d-none');
+    }
+}
+
+
+        function showSubcategories2(subcategory) {
+            const subcategories2Div = document.getElementById('subcategories2');
+            const subcategories2ButtonsDiv = document.getElementById('subcategories2-buttons');
+
+            if (subcategory in subcategories2) {
+                subcategories2ButtonsDiv.innerHTML = '';
+
+                subcategories2[subcategory].forEach((subcat2) => {
+                    const btn = document.createElement('button');
+                    btn.classList.add('btn', 'btn-outline-primary', 'mb-2');
+                    btn.textContent = subcat2;
+                    btn.onclick = () => showProducts(subcat2);
+                    subcategories2ButtonsDiv.appendChild(btn);
+                });
+
+                subcategories2Div.classList.remove('d-none');
+            } else {
+                subcategories2Div.classList.add('d-none');
+            }
+        }
+
+        function showProducts(subcategory) {
+            if (currentSubcategoryBtn) {
+                currentSubcategoryBtn.classList.remove('active');
+            }
+
+            currentSubcategoryBtn = event.target;
+            currentSubcategoryBtn.classList.add('active');
+
+            const productsDiv = document.getElementById('products');
+            productsDiv.innerHTML = '';
+
+            if (subcategory in products) {
+                products[subcategory].forEach((product) => {
+                    const btn = document.createElement('button');
+                    btn.classList.add('btn', 'btn-outline-primary', 'mb-2');
+                    btn.textContent = product;
+                    btn.onclick = () => selectProduct(product);
+                    productsDiv.appendChild(btn);
+                });
+
+                productsDiv.classList.remove('d-none');
+                showSubcategories2(subcategory);
+            } else {
+                productsDiv.classList.add('d-none');
+            }
+        }
+
+        function selectProduct(product) {
+            currentProduct = product;
+            console.log('Selected product:', product);
+        }
+
+        function changeQuantity(amount) {
+            const quantityInput = document.getElementById('quantity');
+            let currentQuantity = parseInt(quantityInput.value, 10);
+            currentQuantity += amount;
+            if (currentQuantity < 1) currentQuantity = 1;
+            quantityInput.value = currentQuantity;
+        }
+
+        function addToOrder() {
+            const quantity = document.getElementById('quantity').value;
+            const selectedProduct = {
+                product: currentProduct,
+                quantity: parseInt(quantity, 10),
+            };
+
+            if (selectedProduct.product) {
+                selectedProducts.push(selectedProduct);
+                updateSelectedProducts();
+            } else {
+                alert('Please select a product first.');
+            }
+        }
+
+        function updateSelectedProducts() {
+            const selectedProductsDiv = document.getElementById('selectedProducts');
+            selectedProductsDiv.innerHTML = '';
+
+            selectedProducts.forEach((item, index) => {
+                const listItem = document.createElement('li');
+                listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+                listItem.textContent = `${item.product} x ${item.quantity}`;
+
+                const removeBtn = document.createElement('span');
+                removeBtn.classList.add('badge', 'bg-danger', 'rounded-pill', 'remove-btn');
+                removeBtn.textContent = 'Remove';
+                removeBtn.onclick = () => removeFromOrder(index);
+                listItem.appendChild(removeBtn);
+
+                selectedProductsDiv.appendChild(listItem);
+            });
+
+            document.getElementById('items').value = JSON.stringify(selectedProducts);
+        }
+
+        function removeFromOrder(index) {
+            selectedProducts.splice(index, 1);
+            updateSelectedProducts();
+        }
+
+        function goBack() {
+            const subcategoriesDiv = document.getElementById('subcategories');
+            const productsDiv = document.getElementById('products');
+
+            if (currentCategoryBtn) {
+                currentCategoryBtn.classList.remove('active');
+            }
+            if (currentSubcategoryBtn) {
+                currentSubcategoryBtn.classList.remove('active');
+            }
+
+            subcategoriesDiv.classList.add('d-none');
+            productsDiv.classList.add('d-none');
+        }
+    </script>
+</body>
+
+</html>
